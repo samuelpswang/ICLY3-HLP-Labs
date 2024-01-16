@@ -1,0 +1,9 @@
+# macos
+.DS_Store
+
+# ide
+.vscode/
+
+# .NET compiled files
+*/bin/
+*/obj/
