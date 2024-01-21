@@ -71,8 +71,7 @@ module PartACase2 =
           Bound0 = Some "Fail" }
 
 module PartACase3 =
-    let mscBoundaries = 
-        [ "Distinction", 70.; "Merit", 60.; "Pass", 50.; "Fail", 0. ]
+    let mscBoundaries = [ "Distinction", 70.; "Merit", 60.; "Pass", 50.; "Fail", 0. ]
 
     let mengBoundaries =
         [ "First", 70.; "UpperSecond", 60.; "LowerSecond", 50.; "Fail", 0. ]
@@ -85,23 +84,22 @@ module PartACase3 =
 
 module PartBCase2 =
 
-    open PartACase2 // get unqualified access to Case 2 types and values
+    open PartACase2
 
-    /// Return as a Ok string the name of the correct classification for a student
-    /// on given course with given mark.
+    /// Return as a Ok string the name of the correct classification for a student on given course with given mark.
     /// Return Error if course or mark are not possible (marks must be in range 100 - 0).
-    /// The error message should say what the problem in the data was.
     let classify (course: string) (mark: float) : Result<string, string> =
-        let boundaryMap: Map<string, Boundaries> =
-            Map [ "MSc", mscBoundaries; "MEng", mengBoundaries; "BEng", bengBoundaries ]
 
-        let findBoundary (name: string) : Result<Boundaries, string> =
-            match Map.tryFind name boundaryMap with
-            | None -> Error(sprintf "given course name (%A) undefined " name)
+        let findBoundaryList (courseName: string) : Result<Boundaries, string> =
+            let boundaryMap: Map<string, Boundaries> =
+                Map [ "MSc", mscBoundaries; "MEng", mengBoundaries; "BEng", bengBoundaries ]
+
+            match Map.tryFind courseName boundaryMap with
+            | None -> Error(sprintf "given course name (%A) undefined " courseName)
             | Some bound -> Ok bound
 
-        let findClassification (boundaryResult: Result<Boundaries, string>) : Result<string, string> =
-            match boundaryResult with
+        let findClassification (mark: float) (boundaryList: Result<Boundaries, string>) : Result<string, string> =
+            match boundaryList with
             | Error message -> Error message
             | Ok bound ->
                 match mark with
@@ -112,29 +110,30 @@ module PartBCase2 =
                 | v when (0. <= v && v < 50.) -> Ok(Option.get bound.Bound0)
                 | _ -> Error(sprintf "given mark (%A) outside range of 0 - 100" mark)
 
-        course |> findBoundary |> findClassification
+        course 
+        |> findBoundaryList 
+        |> findClassification mark
 
 
 //---------------------------Tick2 PartB case 3 skeleton code-------------------------------//
 
 module PartBCase3 =
 
-    open PartACase3 // get unqualified access to Case 3 types and values
+    open PartACase3
 
     /// Return as a Ok string the name of the correct classification for a studen on given course with given mark.
-    /// Return Error if course or mark are not possible (marks must be in range 100 - 0). The error message should say what the problem in the data was.
+    /// Return Error if course or mark are not possible (marks must be in range 100 - 0).
     let classify (course: string) (mark: float) : Result<string, string> =
-        let boundaryMap: Map<string, list<string * float>> =
-            Map [ "MSc", mscBoundaries; "MEng", mengBoundaries; "BEng", bengBoundaries ]
 
-        let findBoundary (name: string) : Result<list<string * float>, string> =
-            match Map.tryFind course boundaryMap with
+        let findBoundaryList (courseName: string) : Result<list<string * float>, string> =
+            let boundaryMap: Map<string, list<string * float>> =
+                Map [ "MSc", mscBoundaries; "MEng", mengBoundaries; "BEng", bengBoundaries ]
+
+            match Map.tryFind courseName boundaryMap with
             | None -> Error(sprintf "given course name (%A) undefined" course)
             | Some bound -> Ok bound
 
-        let findClassification
-            (boundResult: Result<list<string * float>, string>)
-            : Result<option<string * float>, string> =
+        let findClassification (mark: float) (boundResult: Result<list<string * float>, string>) : Result<option<string * float>, string> =
             match boundResult with
             | Error message -> Error message
             | Ok bound -> Ok(List.tryFind (fun (_, lb) -> mark > lb) bound)
@@ -143,26 +142,27 @@ module PartBCase3 =
             match boundResult with
             | Error message -> Error message
             | Ok None -> Error(sprintf "given mark (%A) outside range of 0 - 100" mark)
-            | Ok(Some(cl, _)) when (mark < 0. || 100. < mark) ->
-                Error(sprintf "given mark (%A) outside range of 0 - 100" mark)
-            | Ok(Some(cl, _)) -> Ok cl
+            | Ok (Some (cl, _)) when (mark < 0. || 100. < mark) -> Error(sprintf "given mark (%A) outside range of 0 - 100" mark)
+            | Ok (Some (cl, _)) -> Ok cl
 
-        course |> findBoundary |> findClassification |> checkClassification
+        course 
+        |> findBoundaryList 
+        |> findClassification mark 
+        |> checkClassification
 
 
 //------------------------------------Tick2 PartC skeleton code-----------------------------------//
 
 module PartC =
-    open PartACase3 // get unqualified access to Case 3 types and values
-    open PartBCase3 // get unqualified access to classify function
+    open PartACase3
+    open PartBCase3
 
     type Marks = { Mark1: float } // simplified set of marks (just one mark) used for compilation of code
 
     /// Return the total mark for a student used to determine classification.
+    /// Return None if the course is not valid or any of the marks areoutside the correct range 0 - 100.
     /// marks:  constituent marks of student on given course.
     /// course: name of course student is on
-    /// Return None if the course is not valid or any of the marks are
-    /// outside the correct range 0 - 100.
     let markTotal (marks: Marks) (course: string) : float option =
         match course with
         | "MEng"
@@ -176,7 +176,6 @@ module PartC =
     /// 3. Return Uplift = Some uplift if total is in the valid possible uplift range (0 - -2.5%) of boundary.
     let upliftFunc
         (marks: Marks)
-        (boundaryMark: float)
         (boundary: string)
         (course: string)
         : Result<{| IsAboveBoundary: bool
@@ -185,59 +184,58 @@ module PartC =
         // Use markTotal to calculate total from marks
         // Also return an error if markTotal fails to calculate a mark
         // Ok return type is an anonymous record see link in WS2.
+        // upliftFunc is assumed (when implemented) to take boundary info from a value defined above
+        // with whatever data structure is used for it. In Part C you do not implement
+        // upliftFunc and so need not consider any of this.
         failwithf "Not Implemented" // do not change - implementation not required
 
     /// Given a list of boundaries, and a course, and a student's marks:
-    /// Return the student classification, or an error message if there is
-    /// any error in the data.
-    /// boundaries: name only, subfunctions will know boundary marks based on course,
-    /// this function needs only the results of calling its subfunctions.
+    /// Return the student classification, or an error message if there is any error in the data.
+    /// boundaries: name only, subfunctions will know boundary marks based on course, this function needs only the results of calling its subfunctions.
     let classifyAndUplift (boundaries: string list) (course: string) (marks: Marks) : Result<string, string> =
-        // Use upliftFunc and markTotal and classify.
         // Assume that the student can be within possible uplift range of at most one boundary.
         // Assume that classify is correct unless student is within uplift range of a given boundary,
         // If student is within uplift range of a boundary `boundaryName` work out classification as:
         // let total = markTotal marks course
-        // let effectiveMark = total + upliftFunc boundaryMark boundaryName course
+        // let effectiveMark = total + upliftFunc boundaryName course
         // let className = classify course effectiveMark
-        // Return Ok classname or an error if there is any error.
-        // (option and error returns ignored in above comments, must be dealt with)
-        let processTotal (course: string) (marks: Marks) : Result<float, string> =
+        let findMarkTotal (course: string) (marks: Marks) : Result<float, string> =
             match markTotal marks course with
-            | Some value -> Ok value
+            | Some markTotalValue -> Ok markTotalValue
             | None -> Error "course is not valid or any of the marks are outside the correct range of 0 - 100"
 
-        let processEffectiveMark (total: Result<float, string>) : Result<float, string> =
-            let foldUplift (uplift: float) (bound: string * float) : float =
-                let boundary, boundaryMark = bound
+        let findEffectiveMark (boundaries: string list) (course: string) (marks: Marks) (totalMark: Result<float, string>) : Result<float, string> =
+            let uplift : Result<float, string> =
+                let upliftFolder (upliftTotal: Result<float, string>) (boundary: string) : Result<float, string> =
+                    match upliftTotal with
+                    | Error message -> Error message
+                    | Ok value -> 
+                        match upliftFunc marks boundary course with
+                        | Error message -> Error message
+                        | Ok info -> if info.IsAboveBoundary then (Ok value) else (Ok (Option.defaultValue 0. info.Uplift))
+                
+                List.fold upliftFolder (Ok 0.) boundaries
 
-                match upliftFunc marks boundaryMark boundary course with
-                | Error message -> uplift
-                | Ok info ->
-                    if info.IsAboveBoundary then
-                        uplift
-                    else
-                        uplift + (Option.defaultValue 0. info.Uplift)
-
-            let boundOption =
-                Map.tryFind course (Map [ "MSc", mscBoundaries; "MEng", mengBoundaries; "BEng", bengBoundaries ])
-
-            match boundOption with
-            | None -> Error "course is not valid"
-            | Some bound ->
-                match total with
+            match totalMark with
+            | Error message -> Error message
+            | Ok totalValue ->
+                match uplift with
                 | Error message -> Error message
-                | Ok value -> Ok(value + (List.fold foldUplift 0. bound))
+                | Ok upliftValue -> Ok (totalValue + upliftValue)
 
-        let processClassName (effectiveMark: Result<float, string>) : Result<string, string> =
+        let findClassification (course: string) (effectiveMark: Result<float, string>) : Result<string, string> =
             match effectiveMark with
             | Error message -> Error message
-            | Ok value -> classify course value
+            | Ok effectiveMarkValue -> classify course effectiveMarkValue
 
-        (course, marks) ||> processTotal |> processEffectiveMark |> processClassName
+        (course, marks) 
+        ||> findMarkTotal 
+        |> findEffectiveMark boundaries course marks
+        |> findClassification course
 
 
 //------------------------------Simple test data and functions---------------------------------//
+
 module TestClassify =
     /// test data comaptible with the Tick 2 problem
     let classifyUnitTests =
@@ -283,6 +281,7 @@ let runTests () =
 //-------------------------------------------------------------------------------------------//
 //---------------------------------Tick2 Part X Skeleton code--------------------------------//
 //-------------------------------------------------------------------------------------------//
+
 module PartX =
     type Lens<'A, 'B> = ('A -> 'B) * ('B -> 'A -> 'A)
 
@@ -295,3 +294,4 @@ module PartX =
         let get (a: 'A) = fst l2 (fst l1 a)
         let set (c: 'C) (a: 'A) = snd l1 (snd l2 c (fst l1 a)) a
         get, set
+
