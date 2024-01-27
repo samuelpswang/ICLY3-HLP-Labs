@@ -204,19 +204,19 @@ module PartC =
             | Some markTotalValue -> Ok markTotalValue
             | None -> Error "course is not valid or any of the marks are outside the correct range of 0 - 100"
 
-        let findEffectiveMark (boundaries: string list) (course: string) (marks: Marks) (totalMark: Result<float, string>) : Result<float, string> =
+        let findEffectiveMark (boundaries: string list) (course: string) (marks: Marks) (total: Result<float, string>) : Result<float, string> =
             let uplift : Result<float, string> =
-                let upliftFolder (upliftTotal: Result<float, string>) (boundary: string) : Result<float, string> =
-                    match upliftTotal with
+                let upliftFolder (upliftState: Result<float, string>) (boundary: string) : Result<float, string> =
+                    match upliftState with
                     | Error message -> Error message
-                    | Ok value -> 
+                    | Ok upliftStateVal -> 
                         match upliftFunc marks boundary course with
                         | Error message -> Error message
-                        | Ok info -> if info.IsAboveBoundary then (Ok value) else (Ok (Option.defaultValue 0. info.Uplift))
+                        | Ok info -> if info.IsAboveBoundary then (Ok upliftStateVal) else (Ok (Option.defaultValue 0. info.Uplift))
                 
                 List.fold upliftFolder (Ok 0.) boundaries
 
-            match totalMark with
+            match total with
             | Error message -> Error message
             | Ok totalValue ->
                 match uplift with
