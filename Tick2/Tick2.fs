@@ -1,5 +1,6 @@
 module Tick2
 
+//>PASSED
 //---------------------------Tick2 PartA skeleton code-------------------------------//
 
 module PartACase1 =
@@ -150,6 +151,7 @@ module PartBCase3 =
         |> findClassification mark 
         |> checkClassification
 
+    //> Good! See model answers for a shorter solution
 
 //------------------------------------Tick2 PartC skeleton code-----------------------------------//
 
@@ -233,6 +235,10 @@ module PartC =
         |> findEffectiveMark boundaries course marks
         |> findClassification course
 
+    //> This works but why use a fold here? The outcome of each iteration doesn't depend on previous iterations
+    //> Check model answer with List.tryPick.
+    //> I saw this on classify as well: I think you are using too many helper functions. 
+    //> For example for `findClassification` and `findMarkTotal`, you can just perform the match directly in your code. 
 
 //------------------------------Simple test data and functions---------------------------------//
 
@@ -294,4 +300,6 @@ module PartX =
         let get (a: 'A) = fst l2 (fst l1 a)
         let set (c: 'C) (a: 'A) = snd l1 (snd l2 c (fst l1 a)) a
         get, set
+
+    //Good!
 
