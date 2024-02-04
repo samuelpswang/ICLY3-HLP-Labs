@@ -3,7 +3,9 @@
 
 # ide
 .vscode/
+.vs/
 
 # .NET compiled files
-*/bin/
-*/obj/
+*bin/
+*obj/
+*.sln
